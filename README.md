@@ -22,6 +22,7 @@ This branch contains all raw datasets and preprocessing materials used for clean
 This notebook performs initial data exploration and preprocessing steps, including loading raw datasets, generating preliminary visualizations, filtering date and time, column filtering, and feature engineering.
 
 The notebook produces the following key working datasets:
-[UNDER CONSTRUCTION]
+- `collisions_clean.zip`
+- `stops_clean.csv.zip`
 
 These processed datasets form the foundation for subsequent modeling and policy analysis.
