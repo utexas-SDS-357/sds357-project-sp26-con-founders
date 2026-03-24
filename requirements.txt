@@ -2,3 +2,6 @@ pandas
 geopandas 
 matplotlib 
 plotnine
+astral
+numpy
+scikit-learn
