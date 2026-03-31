@@ -1,0 +1,11 @@
+astral
+geopandas 
+matplotlib 
+numpy
+optuna
+pandas 
+plotnine
+scikit-learn
+shap
+xgboost
+zipfile
