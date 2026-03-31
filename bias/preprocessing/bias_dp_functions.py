@@ -25,6 +25,9 @@ def load_data(path, geospatial = False):
         A GeoDataFrame with a geometry column constructed from latitude and longitude
         values.
     """
+
+    # get filename from path
+    file_name = get_filename(path)
     
     # check if zipped
     if(path[-3:]=="zip"):
