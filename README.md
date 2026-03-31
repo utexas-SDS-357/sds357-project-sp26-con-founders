@@ -64,6 +64,16 @@ By default, the main branch will be visible and contain the following files:
 To reproduce any results or make updates to the pipeline, use the installation instructions above to access the relevant files. 
 Code can be accessed and edited using a shell or integrated development environment (e.g. VSCode) that supports Python. 
 
+To access large data files, ensure `lfs` is installed:
+
+```
+git lfs install
+```
+Pull data by calling:
+```
+git lfs pull
+```
+
 ### Dependencies
 Necessary dependencies including python packages are included in the `requirements.txt` file within the preprocessing and analysis subdirectories. 
 Notebooks contain the code necessary to install these packages. 
