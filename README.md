@@ -57,12 +57,13 @@ By default, the main branch will be visible and contain the following files:
 
 | Directory | Subdirectory | File descriptions |
 | ----------| ------------ | ----------------- |
-| `did` | `preprocessing`<br>`data`<br>`analysis`<br>`output` | desc<br>desc<br>desc<br>desc |
-| `bias` | `preprocessing`<br>`data`<br>`analysis`<br>`output` | desc<br>desc<br>desc<br>desc |
-
-
+| `did` | `preprocessing`<br>`data`<br>`analysis`<br>`output` |- Preprocessing files used to clean traffic collision datasets<br>- Raw and corresponding clean collision data obtained from processing pipeline<br>- Code used for exploratory data analysis and modeling collision outcomes<br>- Relevant output from collision analysis pipeline, including graphics used in presentations/reports |
+| `bias` | `preprocessing`<br>`data`<br>`analysis`<br>`output` |- Preprocessing files necessary to clean traffic stop datasets<br>- Raw and corresponding clean stop data obtained from processing pipeline<br>- Files used for exploratory data analysis and modeling stop outcomes<br>- Relevant output from bias analysis pipeline, including graphics used in presentations/reports |
 
 ## Usage Instructions
-
+To reproduce any results or make updates to the pipeline, use the installation instructions above to access the relevant files. 
+Code can be accessed and edited using a shell or integrated development environment (e.g. VSCode) that supports Python. 
 
 ### Dependencies
+Necessary dependencies including python packages are included in the `requirements.txt` file within the preprocessing and analysis subdirectories. 
+Notebooks contain the code necessary to install these packages. 
