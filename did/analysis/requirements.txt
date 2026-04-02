@@ -1,7 +1,0 @@
-matplotlib
-pandas
-numpy
-datetime
-geopandas
-sdid
-pyarrow==23.0.1

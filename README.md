@@ -1,5 +1,3 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/MFzEnxem)
-
 # Analyzing Vision Zero Outcomes in Collisions, Community, and Policing
 
 ## Project Overview
@@ -45,11 +43,26 @@ These data are used to determine whether traffic stops occur during day, night, 
 To clone this repository to your local machine:
 1. Download [git](https://git-scm.com/).
 2. Open your Terminal/Command Prompt application.
-3. Change your working directory to the local folder where you want the repository to be saved (change `local_folder_path` to the actual path name).
+3. Ensure Git-LFS is installed for accessing large files.
+Enter the following prompt:
+```
+git lfs version
+```
+If output indicates `'lfs' is not a git command`, install it via the [website](https://git-lfs.com/) or the following steps:
+```
+brew install git-lfs       # for macOS
+apt-get install git-lfs    # Linux
+```
+Initalize it via: 
+```
+git lfs install
+```
+
+4. Change your working directory to the local folder where you want the repository to be saved (change `local_folder_path` to the actual path name).
 ```
 cd local_folder_path
 ```
-4. Clone the github repository.
+5. Clone the github repository.
 ```
 git clone https://github.com/utexas-SDS-357/sds357-project-sp26-con-founders.git
 ```
@@ -58,23 +71,30 @@ By default, the main branch will be visible and contain the following files:
 
 | Directory | Subdirectory | File descriptions |
 | ----------| ------------ | ----------------- |
-| `did` | `preprocessing`<br>`data`<br>`analysis`<br>`output` |- Preprocessing files used to clean traffic collision datasets<br>- Raw and corresponding clean collision data obtained from processing pipeline<br>- Code used for exploratory data analysis and modeling collision outcomes<br>- Relevant output from collision analysis pipeline, including graphics used in presentations/reports |
-| `bias` | `preprocessing`<br>`data`<br>`analysis`<br>`output` |- Preprocessing files necessary to clean traffic stop datasets<br>- Raw and corresponding clean stop data obtained from processing pipeline<br>- Files used for exploratory data analysis and modeling stop outcomes<br>- Relevant output from bias analysis pipeline, including graphics used in presentations/reports |
+| `did` | `src`<br><br><br><br>`data`<br><br><br><br><br>`output` | **`src`**:<br>`requirements.txt`: Necessary dependencies to install <br>`did_preprocessing.ipynb`: Preprocessing files used to clean traffic collision datasets<br>`did_analysis.ipynb`: Code used for exploratory data analysis and modeling collision outcomes <br>**`data`**:<br>`raw_data/`: Raw data used to process collsion data<br>`clean_data/`: Clean collision data from the `did_preprocessing.ipynb` pipeline<br>**`output`**:<br>Relevant output from collision analysis pipeline (including `did_analysis.ipynb`) used in presentations/reports |
+| `bias` | `src`<br><br><br><br>`data`<br><br><br><br><br>`output` |**`src`**:<br>`requirements.txt`: Necessary dependencies to install <br>`bias_preprocessing.ipynb`: Preprocessing files used to clean traffic stop datasets<br>`bias_eda.ipynb`: Code used for exploratory data analysis of traffic stops<br>`bias_model.ipynb`: Modeling pipeline to produce output <br>**`data`**:<br>Raw data used to process collsion data and clean collision data obtained from `bias_preprocessing.ipynb` pipeline<br>**`output`**:<br>Relevant output from collision analysis pipeline (including `bias_eda.ipynb` and `bias_model.ipynb`) used in presentations/reports
+
+
+After cloning the repository to your local machine, activate a virtual environment to install the necessary project-specific dependencies.
+1. Change your working directory to the local repository.
+2. Activate the virtual environment:
+For Mac and Linux users, enter:
+```
+source venv/bin/activate
+```
+For Windows users, 
+```
+venv\Scripts\activate 
+```
+To install necessary dependencies, 
+```
+pip install -r did/src/requirements.txt -r bias/src/requirements.txt
+```
 
 ## Usage Instructions
 To reproduce any results or make updates to the pipeline, use the installation instructions above to access the relevant files. 
 Code can be accessed and edited using a shell or integrated development environment (e.g. VSCode) that supports Python. 
 
-To access large data files, ensure `lfs` is installed:
-
-```
-git lfs install
-```
-Pull data by calling:
-```
-git lfs pull
-```
-
 ### Dependencies
-Necessary dependencies including python packages are included in the `requirements.txt` file within the preprocessing and analysis subdirectories. 
+Necessary dependencies are included in the `requirements.txt` file within the preprocessing and analysis subdirectories. 
 Notebooks contain the code necessary to install these packages. 
