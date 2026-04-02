@@ -1,0 +1,11 @@
+astral
+geopandas 
+matplotlib 
+numpy
+optuna
+pandas 
+pyarrow==23.0.1
+plotnine
+scikit-learn
+shap
+xgboost

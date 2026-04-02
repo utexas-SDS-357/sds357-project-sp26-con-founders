@@ -1,0 +1,8 @@
+datetime
+geopandas
+kagglehub
+matplotlib
+numpy
+pandas
+pyarrow==23.0.1
+sdid
