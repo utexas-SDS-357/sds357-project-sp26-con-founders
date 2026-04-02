@@ -75,16 +75,20 @@ By default, the main branch will be visible and contain the following files:
 | `bias` | `src`<br><br><br><br>`data`<br><br><br><br><br>`output` |**`src`**:<br>`requirements.txt`: Necessary dependencies to install <br>`bias_preprocessing.ipynb`: Preprocessing files used to clean traffic stop datasets<br>`bias_eda.ipynb`: Code used for exploratory data analysis of traffic stops<br>`bias_model.ipynb`: Modeling pipeline to produce output <br>**`data`**:<br>Raw data used to process collsion data and clean collision data obtained from `bias_preprocessing.ipynb` pipeline<br>**`output`**:<br>Relevant output from collision analysis pipeline (including `bias_eda.ipynb` and `bias_model.ipynb`) used in presentations/reports
 
 
-After cloning the repository to your local machine, activate a virtual environment to install the necessary project-specific dependencies.
+After cloning the repository to your local machine, create and activate a virtual environment to install the necessary project-specific dependencies.
 1. Change your working directory to the local repository.
-2. Activate the virtual environment:
+2. Create a virtual environment:
+```
+python3 -m venv .venv
+```
+3. Activate the virtual environment:
 For Mac and Linux users, enter:
 ```
-source venv/bin/activate
+source .venv/bin/activate
 ```
 For Windows users, 
 ```
-venv\Scripts\activate 
+.venv\Scripts\activate 
 ```
 To install necessary dependencies, 
 ```
