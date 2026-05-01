@@ -46,10 +46,11 @@ git clone https://github.com/utexas-SDS-357/sds357-project-sp26-con-founders.git
 A new directory named after the repository will be created, containing all files, history, and metadata. By default, the main branch will be visible and contain the following files:
 
 | Directory/File | Description |
-|----|----|
+|------------------------------------|------------------------------------|
 | `bias` | Data, source code, and output for the Bias objective |
 | `did` | Data, source code, and output for the Impact objective |
 | `.gitattributes` | File used by Git to define how specific files and paths should be handled, used for large file storage |
+| `.gitignore` | File used by Git to prevent tracking unnecessary files |
 | `requirements.txt` | Necessary dependencies to install |
 
 After cloning the repository to your local machine, create and activate a virtual environment to install the necessary project-specific dependencies. 1. Change your working directory to the local repository. 2. Create a virtual environment:
