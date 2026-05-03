@@ -438,8 +438,8 @@ def plot_stops_proportion(stops_df, cutoff_date, date_col="date", epc_col="epc_c
     )
 
     return (
-        ggplot(stop_counts, aes(x="month", y="prop_within_class"))
-        + geom_line()
+        ggplot(stop_counts, aes(x="month", y="prop_within_class", color=epc_col))
+        + geom_line(size = 2)
         + geom_vline(
             xintercept=pd.Timestamp(cutoff_date),
             linetype="dashed",
@@ -447,9 +447,10 @@ def plot_stops_proportion(stops_df, cutoff_date, date_col="date", epc_col="epc_c
         )
         + scale_x_date(date_breaks="2 years", date_labels="%Y", name="Year")
         + scale_y_continuous(name="Proportion of Stops")
-        + facet_grid(f"~{epc_col}")
+        + scale_color_manual(name="Concern Level", values=EPC_COLORS)
         + theme_linedraw()
-        + theme(figure_size=(10, 5))
+        + theme(figure_size=(10, 5),
+                legend_key=element_rect(color="white"))
     )
 
 
@@ -527,9 +528,15 @@ def plot_stops_per_capita(df, year_col="year", rate_col="stops_per_capita",
     plotnine.ggplot
         A ggplot object rendering a line chart of stops per capita by race over time.
     """
+
     return (
         ggplot(df, aes(x=year_col, y=rate_col, color=race_col))
         + geom_line(size=1.5)
+        + geom_vline(xintercept=2014.25, 
+                     linetype="dashed",
+                     color="blue",
+                     size = 2
+            )
         + scale_color_manual(name="Subject Race", values=RACE_COLORS)
         + labs(
             x="Year",
@@ -575,6 +582,11 @@ def plot_outcome_rate(df, title, y_label, year_col="year", rate_col="outcome_rat
     return (
         ggplot(df, aes(x=year_col, y=rate_col, color=race_col))
         + geom_line(size=1.5)
+        + geom_vline(xintercept=2014.25, 
+                     linetype="dashed",
+                     color="blue",
+                     size = 2
+            )
         + geom_point(size=2)
         + scale_color_manual(name="Subject Race", values=RACE_COLORS)
         + labs(x="Year", y=y_label, title=title)
