@@ -12,7 +12,10 @@ A description of the relevant data is provided within each subdirectory.
 
 ## Installation Instructions
 
-To clone this repository to your local machine: 1. Download [git](https://git-scm.com/). 2. Open your Terminal/Command Prompt application. 3. Ensure Git-LFS is installed for accessing large files. Enter the following prompt:
+To clone this repository to your local machine: 
+1.  Download [git](https://git-scm.com/). 
+2.  Open your Terminal/Command Prompt application. 
+3.  Ensure Git-LFS is installed for accessing large files. Enter the following prompt:
 
 ```         
 git lfs version
@@ -53,7 +56,10 @@ A new directory named after the repository will be created, containing all files
 | `.gitignore` | File used by Git to prevent tracking unnecessary files |
 | `requirements.txt` | Necessary dependencies to install |
 
-After cloning the repository to your local machine, create and activate a virtual environment to install the necessary project-specific dependencies. 1. Change your working directory to the local repository. 2. Create a virtual environment:
+After cloning the repository to your local machine, create and activate a virtual environment to install the necessary project-specific dependencies. 
+
+1.  Change your working directory to the local repository. 
+2.  Create a virtual environment:
 
 ```         
 python3 -m venv .venv
