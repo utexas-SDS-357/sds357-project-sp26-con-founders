@@ -443,7 +443,8 @@ def plot_stops_proportion(stops_df, cutoff_date, date_col="date", epc_col="epc_c
         + geom_vline(
             xintercept=pd.Timestamp(cutoff_date),
             linetype="dashed",
-            color="blue"
+            color="blue",
+            size = 2
         )
         + scale_x_date(date_breaks="2 years", date_labels="%Y", name="Year")
         + scale_y_continuous(name="Proportion of Stops")
