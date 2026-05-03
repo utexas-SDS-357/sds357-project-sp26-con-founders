@@ -533,8 +533,8 @@ def plot_stops_per_capita(df, year_col="year", rate_col="stops_per_capita",
         + scale_color_manual(name="Subject Race", values=RACE_COLORS)
         + labs(
             x="Year",
-            y=f"Stops per {scale:,} Residents",
-            title="Traffic Stops per Capita by Race"
+            y="Number of Stops",
+            title=f"Stops per {scale:,} Residents by Race"
         )
         + theme_bw()
         + theme(
