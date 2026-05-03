@@ -1,12 +1,12 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import optuna
 import pandas as pd
 import shap
+from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, confusion_matrix, log_loss
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from sklearn.utils.class_weight import compute_class_weight
-import subprocess
+from sklearn.metrics import confusion_matrix, log_loss, f1_score
+from sklearn.preprocessing import OneHotEncoder
 import xgboost as xgb
 
 def preprocess_stops(df):
@@ -61,20 +61,20 @@ def split_pre_post(df, policy_date):
     post = df[df['date'] >= policy_date].drop(columns=['date'])
     return pre, post
 
-def get_weights(y):
+def get_weights(y, strategy="sqrt_inverse"):
     """
-    Compute sample weights to balance class frequencies.
-
-    y : pandas.Series
-        Outcome variable containing class labels.
-
-    Returns
-    numpy.ndarray
-        Array of sample weights corresponding to each observation,
-        using square-root inverse frequency scaling.
+    strategy : "sqrt_inverse" | "inverse" | "none"
     """
+    if strategy == "none":
+        return np.ones(len(y))
+    
     class_counts = y.value_counts().sort_index()
-    class_weights = 1 / np.sqrt(class_counts)
+    
+    if strategy == "inverse":
+        class_weights = 1 / class_counts
+    elif strategy == "sqrt_inverse":
+        class_weights = 1 / np.sqrt(class_counts)
+    
     class_weights = class_weights / class_weights.min()
     return y.map(class_weights.to_dict()).values
 
@@ -122,6 +122,51 @@ def train_xgb(X_train, y_train, X_val, y_val, sample_weights, best_params, n_cla
     )
 
     return model
+
+def evaluate_baseline(X_train, y_train, X_val, y_val, X_test, y_test, n_classes):
+    """
+    Train a default XGBoost with no tuning and no sample weights.
+    Returns log_loss and macro F1 on the test set.
+    """
+    params = {
+        "objective": "multi:softprob",
+        "eval_metric": "mlogloss",
+        "num_class": n_classes,
+        "tree_method": "hist",
+        "learning_rate": 0.1,
+        "n_estimators": 1000,
+        "early_stopping_rounds": 50,
+    }
+    model = xgb.XGBClassifier(**params)
+    model.fit(
+        X_train, y_train,
+        eval_set=[(X_val, y_val)],
+        verbose=False
+    )
+    
+    preds = model.predict(X_test)
+    proba = model.predict_proba(X_test)
+    
+    return {
+        "log_loss": log_loss(y_test, proba),
+        "f1_macro": f1_score(y_test, preds, average="macro"),
+        "f1_per_class": f1_score(y_test, preds, average=None).tolist()
+    }
+
+def evaluate_null_model(X_train, y_train, X_test, y_test):
+    """
+    Majority-class dummy classifier as a floor baseline.
+    """
+    dummy = DummyClassifier(strategy="most_frequent")
+    dummy.fit(X_train, y_train)
+
+    preds = dummy.predict(X_test)
+    proba = dummy.predict_proba(X_test)
+
+    return {
+        "log_loss": log_loss(y_test, proba),
+        "f1_macro": f1_score(y_test, preds, average="macro"),
+    }
 
 def tune_xgb(X_train, y_train, X_val, y_val, sample_weights, n_classes, n_trials=50):
     """
@@ -178,7 +223,7 @@ def tune_xgb(X_train, y_train, X_val, y_val, sample_weights, n_classes, n_trials
         return log_loss(y_val, model.predict_proba(X_val))
 
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=n_trials)
+    study.optimize(objective, n_trials=n_trials, n_jobs = 4)
 
     return study.best_params, study.best_value
 
@@ -206,29 +251,43 @@ def compute_shap(model, X_test, n_classes):
 
     return shap_values_per_class
 
-def evaluate_model(model, X_test, y_test):
+def compare_weight_strategies(X_train, y_train, X_val, y_val, X_test, y_test,
+                               n_classes, n_trials=50):
     """
-    Evaluate model performance on test data.
-
-    model : xgboost.XGBClassifier
-        Trained model.
-    X_test : pandas.DataFrame
-        Test feature matrix.
-    y_test : pandas.Series
-        True outcome labels.
-
-    Returns
-    tuple
-        accuracy : float
-            Classification accuracy on test set.
-        confusion_matrix : numpy.ndarray
-            Confusion matrix of predictions.
+    Tune and evaluate each weight strategy by val log loss,
+    then return the best strategy and its results.
     """
-    preds = model.predict(X_test)
-    acc = accuracy_score(y_test, preds)
-    cm = confusion_matrix(y_test, preds)
+    from sklearn.metrics import f1_score
 
-    return acc, cm
+    strategies = ["sqrt_inverse", "inverse"]
+    strategy_results = {}
+
+    for strategy in strategies:
+        weights = get_weights(y_train, strategy=strategy)
+        best_params, best_val_loss = tune_xgb(
+            X_train, y_train, X_val, y_val,
+            weights, n_classes, n_trials
+        )
+        model = train_xgb(
+            X_train, y_train, X_val, y_val,
+            weights, best_params, n_classes
+        )
+
+        preds = model.predict(X_test)
+        proba = model.predict_proba(X_test)
+
+        strategy_results[strategy] = {
+            "model": model,
+            "best_params": best_params,
+            "val_log_loss": best_val_loss,           # from tuning
+            "test_log_loss": log_loss(y_test, proba),
+            "f1_macro": f1_score(y_test, preds, average="macro"),
+            "f1_per_class": f1_score(y_test, preds, average=None).tolist()
+        }
+
+    best_strategy = min(strategy_results, key=lambda s: strategy_results[s]["test_log_loss"])
+
+    return strategy_results, best_strategy
 
 def strat_split(df, outcome_col='outcome', epc_col='epc_class', 
                                   train_frac=0.75, val_frac=0.15, test_frac=0.15, random_state=42):
@@ -302,6 +361,131 @@ def encode(df, cat_cols, outcome_col, encoder=None):
     
     return X, y
 
+FEATURE_LABELS = {
+    'subject_age': 'Subject Age',
+    'moving': 'Moving Violation',
+    'mech_nonmoving': 'Mechanical/Non-Moving Violation',
+    'dui': 'DUI',
+    'collision': 'Collision',
+    'motor_assist': 'Motorist Assist',
+    'mpc': 'Municipal Police Code',
+    'bolo': 'BOLO',
+    'subject_race_asian/pacific islander': 'Race: Asian/Pacific Islander',
+    'subject_race_black': 'Race: Black',
+    'subject_race_hispanic': 'Race: Hispanic',
+    'subject_race_other': 'Race: Other',
+    'subject_race_white': 'Race: White',
+    'subject_sex_female': 'Sex: Female',
+    'subject_sex_male': 'Sex: Male',
+    'light_condition_dawn': 'Light: Dawn',
+    'light_condition_day': 'Light: Day',
+    'light_condition_dusk': 'Light: Dusk',
+    'light_condition_night': 'Light: Night',
+    'district_BAYVIEW': 'District: Bayview',
+    'district_CENTRAL': 'District: Central',
+    'district_INGLESIDE': 'District: Ingleside',
+    'district_MISSION': 'District: Mission',
+    'district_NORTHERN': 'District: Northern',
+    'district_PARK': 'District: Park',
+    'district_RICHMOND': 'District: Richmond',
+    'district_SOUTHERN': 'District: Southern',
+    'district_TARAVAL': 'District: Taraval',
+    'district_TENDERLOIN': 'District: Tenderloin',
+    'epc_class_High': 'EPC Class: High',
+    'epc_class_Higher': 'EPC Class: Higher',
+    'epc_class_Highest': 'EPC Class: Highest',
+    'epc_class_Non-EPC': 'EPC Class: Non-EPC',
+    **{f'month_{i}': f'Month: {pd.Timestamp(2024, i, 1).strftime("%B")}' for i in range(1, 13)},
+    **{f'day_of_week_{d}': f'Day: {d}' for d in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']}
+}
+
+OUTCOME_FILENAMES = {0: "arrests", 1: "citations", 2: "warnings", 3: "no_action"}
+
+def plot_shap(shap_values, X_test, feature_names, period_label):
+    """
+    Generate a SHAP beeswarm summary plot for each outcome class.
+
+    shap_values     : list of np.ndarray, one array per class (n_samples x n_features)
+    feature_names   : list of str
+    period_label    : str, used in plot titles
+    """
+    display_names = [FEATURE_LABELS.get(f, f) for f in feature_names]
+    period_slug = "prepolicy" if period_label == "Pre-Policy" else "postpolicy"
+    
+    for cls_idx, cls_shap in enumerate(shap_values):
+        outcome_name = OUTCOME_LABELS.get(cls_idx, f"Class {cls_idx}")
+        outcome_slug = OUTCOME_FILENAMES.get(cls_idx, f"class_{cls_idx}")
+
+        plt.figure(figsize=(10, 6))
+        shap.summary_plot(
+            cls_shap,
+            features=X_test,
+            feature_names=display_names,
+            plot_type="dot",
+            max_display=7,
+            show=False
+        )
+        plt.title(f"{period_label} Feature Importance for {outcome_name}", fontsize=13)
+        plt.tight_layout()
+        plt.savefig(f"../output/{outcome_slug}_shap_{period_slug}.png", dpi=150, bbox_inches="tight")
+        plt.show()
+
+OUTCOME_LABELS = {0: "Arrest", 1: "Citation", 2: "Warning", 3: "No Action"}
+
+def report_results(results):
+    """
+    Print summary metrics and generate SHAP plots for pre/post policy results.
+
+    results : dict
+        Output from run_model_pipeline, with keys "pre" and "post".
+    """
+    for period in ["pre", "post"]:
+        r = results[period]
+        period_label = "Pre-Policy" if period == "pre" else "Post-Policy"
+
+        print("=" * 60)
+        print(f"  {period_label}")
+        print("=" * 60)
+
+        # --- Null model ---
+        print("\n[Null Model - Majority Class]")
+        print(f"  Log Loss : {r['null_model']['log_loss']:.4f}")
+        print(f"  F1 Macro : {r['null_model']['f1_macro']:.4f}")
+
+        # --- Untuned XGBoost, no weights ---
+        print("\n[Baseline - No Tuning, No Weights]")
+        print(f"  Log Loss : {r['baseline']['log_loss']:.4f}")
+        print(f"  F1 Macro : {r['baseline']['f1_macro']:.4f}")
+        print(f"  F1 Per Class:")
+        for cls_idx, f1 in enumerate(r['baseline']['f1_per_class']):
+            print(f"    {OUTCOME_LABELS[cls_idx]:<12}: {f1:.4f}")
+
+        # --- Final tuned model ---
+        print(f"\n[Final Model - Best Strategy: {r['best_strategy']}]")
+        print(f"  Optimal Hyperparameters:")
+        for k, v in r['best_params'].items():
+            print(f"    {k}: {v}")
+        print(f"  Log Loss : {r['test_log_loss']:.4f}")
+        print(f"  F1 Macro : {r['f1_macro']:.4f}")
+        print(f"  F1 Per Class:")
+        for cls_idx, f1 in enumerate(r['f1_per_class']):
+            print(f"    {OUTCOME_LABELS[cls_idx]:<12}: {f1:.4f}")
+
+        # --- All weight strategies compared ---
+        print(f"\n[Weight Strategy Comparison]")
+        for strategy, sr in r['strategy_results'].items():
+            print(f"  {strategy:<15} | Val Loss: {sr['val_log_loss']:.4f} "
+                  f"| Test Loss: {sr['test_log_loss']:.4f} "
+                  f"| F1 Macro: {sr['f1_macro']:.4f}")
+
+        # --- SHAP plots per outcome ---
+        print(f"\n[SHAP Plots — {period_label}]")
+        plot_shap(r['shap_values'], r['X_test'], r['shap_feature_names'], period_label)
+
+    print("=" * 60)
+
+
+
 def run_model_pipeline(df, config):
     """
     Runs the full modeling pipeline for pre- and post-policy datasets.
@@ -319,7 +503,6 @@ def run_model_pipeline(df, config):
     results : dict
         Dictionary with keys "pre" and "post", each containing:
         - model : trained XGBoost model
-        - accuracy : float
         - confusion_matrix : numpy.ndarray
         - shap_values : object
         - best_params : dict
@@ -345,37 +528,42 @@ def run_model_pipeline(df, config):
         X_val, y_val = encode(val, config["categorical_cols"], config["outcome_col"], encoder)
         X_test, y_test = encode(test, config["categorical_cols"], config["outcome_col"], encoder)
 
-        # weights
-        weights = get_weights(y_train)
+        feature_names = X_train.columns.tolist()
 
         # classes
         n_classes = len(np.unique(y_train))
 
+        null_metrics = evaluate_null_model(X_train, y_train, X_test, y_test)
+
+        # get baseline model results
+        baseline_metrics = evaluate_baseline(
+            X_train, y_train, X_val, y_val, X_test, y_test, n_classes
+        )
+
         # tune
-        best_params, best_loss = tune_xgb(
-            X_train, y_train, X_val, y_val,
-            weights, n_classes,
-            config["n_trials"]
+        strategy_results, best_strategy = compare_weight_strategies(
+            X_train, y_train, X_val, y_val, X_test, y_test,
+            n_classes, config["n_trials"]
         )
 
-        # train
-        model = train_xgb(
-            X_train, y_train, X_val, y_val,
-            weights, best_params, n_classes
-        )
+        best = strategy_results[best_strategy]
 
-        # evaluate
-        acc, cm = evaluate_model(model, X_test, y_test)
-
-        # shap
-        shap_vals = compute_shap(model, X_test, n_classes)
+        shap_vals = compute_shap(best["model"], X_test, n_classes)
 
         results[label] = {
-            "model": model,
-            "accuracy": acc,
-            "confusion_matrix": cm,
+            "null_model": null_metrics,
+            "shap_feature_names": feature_names,
+            "X_test": X_test,
+            "baseline": baseline_metrics,
+            "strategy_results": strategy_results,
+            "best_strategy": best_strategy,
+            "model": best["model"],
+            "best_params": best["best_params"],
+            "test_log_loss": best["test_log_loss"],
+            "f1_macro": best["f1_macro"],
+            "f1_per_class": best["f1_per_class"],
             "shap_values": shap_vals,
-            "best_params": best_params
+            "confusion_matrix": confusion_matrix(y_test, best["model"].predict(X_test))
         }
 
     return results
