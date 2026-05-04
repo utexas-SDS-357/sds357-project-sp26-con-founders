@@ -56,7 +56,11 @@ A new directory named after the repository will be created, containing all files
 | `.gitignore` | File used by Git to prevent tracking unnecessary files |
 | `requirements.txt` | Necessary dependencies to install |
 
-After cloning the repository to your local machine, create and activate a virtual environment to install the necessary project-specific dependencies. 
+Download files tracked by Git LFS
+```
+git pull lfs
+```
+After cloning the repository to your local machine and downloading large files, create and activate a virtual environment to install the necessary project-specific dependencies. 
 
 1.  Change your working directory to the local repository. 
 2.  Create a virtual environment:
