@@ -1,0 +1,14 @@
+astral
+datetime
+geopandas
+kagglehub 
+matplotlib 
+numpy
+optuna
+pandas 
+pyarrow==23.0.1
+plotnine
+scikit-learn
+sdid
+shap
+xgboost
